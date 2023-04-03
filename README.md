@@ -28,7 +28,7 @@ the hours of beginning and ending for each day work.
 
 The software is divided in layers, each one is in charge of one task:
 
-* Clean and validate the strings (this can be divided in more functions).
+* Clean and validate the strings (this can be divided in more layers).
 * Create the response for each worker data.
 * Calculate the weekly payment for each worker
 * Calculate a day payment 

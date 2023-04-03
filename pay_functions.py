@@ -94,12 +94,18 @@ def day_pay(day_data):
     hf = "%H:%M"
 
     day_intervals = {
-        "n": [datetime.strptime("00:00", hf), datetime.strptime("9:00", hf)],
-        "d": [datetime.strptime("9:00", hf), datetime.strptime("18:00", hf)],
-        "e": [
-            datetime.strptime("18:00", hf),
-            datetime.strptime("00:00", hf) + timedelta(days=1),
-        ],
+        "n": {
+            "begin": datetime.strptime("00:00", hf),
+            "end": datetime.strptime("9:00", hf),
+        },
+        "d": {
+            "begin": datetime.strptime("9:00", hf),
+            "end": datetime.strptime("18:00", hf),
+        },
+        "e": {
+            "begin": datetime.strptime("18:00", hf),
+            "end": datetime.strptime("00:00", hf) + timedelta(days=1),
+        },
     }
 
     payments = {"wd": {"n": 25, "d": 15, "e": 20}, "we": {"n": 30, "d": 20, "e": 25}}
@@ -114,17 +120,19 @@ def day_pay(day_data):
     hours_interval = day_data[2:].split("-")
     start = datetime.strptime(hours_interval[0], hf)
     end = datetime.strptime(hours_interval[1], hf)
+    # If the ending hour is the 00:00, add one day to signal that it is the end of the day
+    # not the beginning
     if end == datetime.strptime("00:00", hf):
         end += timedelta(days=1)
 
     initial_interval = None
     end_interval = None
     # Found the intervals where the day working hours start and end
-    for k, v in day_intervals.items():
-        if v[0] <= start <= v[1]:
-            initial_interval = k
-        if v[0] <= end <= v[1]:
-            end_interval = k
+    for day_turn, turn_interval_hours in day_intervals.items():
+        if turn_interval_hours["begin"] <= start <= turn_interval_hours["end"]:
+            initial_interval = day_turn
+        if turn_interval_hours["begin"] <= end <= turn_interval_hours["end"]:
+            end_interval = day_turn
 
     current_start = start
     current_interval = initial_interval
@@ -141,13 +149,13 @@ def day_pay(day_data):
             )
             break
         else:
-            current_end = day_intervals[current_interval][1]
+            current_end = day_intervals[current_interval]["end"]
             hours = round((current_end - current_start) / timedelta(hours=1), 2)
             pay_data.append(
                 {"day_type": day_type, "interval": current_interval, "hours": hours}
             )
             current_interval = interval_precedence[current_interval]
-            current_start = day_intervals[current_interval][0]
+            current_start = day_intervals[current_interval]["begin"]
 
     # Calculate the pay for the day and add it to result
     for item in pay_data:
