@@ -5,17 +5,17 @@ Read the payment data and prints the week pay amount for each worker.
 from pay_functions import worker_pay, read_week_data
 
 
-def pay(data_handler):
+def pay(data_file_handler):
     """
     Receives the handler of the data file and returns a list of strings with each
     worker payment for valid strings and an error message for invalid ones.
 
-    :param data_handler: file handler
+    :param data_file_handler: file handler
     :return: list of strings
     """
 
     result_strings = []
-    workers_week_data = read_week_data(data_handler)
+    workers_week_data = read_week_data(data_file_handler)
 
     for worker_week_data in workers_week_data:
         if worker_week_data["valid"]:

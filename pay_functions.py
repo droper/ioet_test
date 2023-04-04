@@ -2,11 +2,45 @@
 Payment functions
 """
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 import re
 
 from collections import OrderedDict
+
+from config import message_strings, week_string_pattern
+
+
+def clean_data(data_file_handler):
+    """
+    Receive the week data string and strip it from blank spaces and ensure that all chars are
+    upper case.
+    :param data_file_handler: Data file handler
+    :return: String
+    """
+
+    clean_strings = []
+    for week_data in data_file_handler.readlines():
+        clean_week_data = week_data.strip()
+        clean_week_data = clean_week_data.replace(' ', '')
+        clean_week_data = clean_week_data.upper()
+        clean_strings.append(clean_week_data)
+
+    return clean_strings
+
+
+def validate_week_data(week_data, pattern):
+    """
+    Validate if the week data string comply with the pattern.
+
+    :param week_data: String with week data
+    :param pattern: regular expression string
+    :return:
+    """
+
+    if re.match(pattern, week_data):
+        return True
+    return False
 
 
 def read_week_data(data_file_handler):
@@ -17,24 +51,25 @@ def read_week_data(data_file_handler):
     :param data_file_handler: file handler
     :return: list of dicts with two keys, valid and text
     """
-    data_string_pattern = (
-        r"^[A-Z]+=(?:(?:MO|TU|WE|TH|FR|SA|SU)\d{2}:\d{2}-\d{2}:\d{2},?)+$"
-    )
 
-    data_strings = []
-    for count, data_string in enumerate(data_file_handler.readlines(), 1):
-        data_string = data_string.strip()
-        if re.match(data_string_pattern, data_string):
-            data_strings.append({"valid": True, "text": data_string})
+    # Clean data file strings
+    data_strings = clean_data(data_file_handler)
+
+    result_dicts = []
+
+    # If a string is valid, append it to the result, if not, append an error message
+    for count, data_string in enumerate(data_strings, 1):
+        if validate_week_data(data_string, week_string_pattern):
+            result_dicts.append({"valid": True, "text": data_string})
         else:
-            data_strings.append(
+            result_dicts.append(
                 {
                     "valid": False,
-                    "text": f"Data string number {count} does not comply with the format: {data_string}",
+                    "text": message_strings["format_error_message"].format(count, data_string),
                 }
             )
 
-    return data_strings
+    return result_dicts
 
 
 def worker_pay(data):
@@ -50,7 +85,7 @@ def worker_pay(data):
     name = parts[0]
     week_hours = parts[1]
 
-    return f"The amount to pay {name} is: {week_pay(week_hours)} USD"
+    return message_strings["amount_message"].format(name, week_pay(week_hours))
 
 
 def week_pay(week_data):
@@ -76,7 +111,7 @@ def week_pay(week_data):
 
 def day_pay(day_data):
     """
-    Receives a working day data and returns the payment for that day
+    Receives a working day data and returns the payment for that day.
 
     :param day_data: string in the format WD##:##
     :return: a float with the amount of dollars for the day
