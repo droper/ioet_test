@@ -4,7 +4,7 @@
 The program read strings from a text file and use them to calculate the week payment for a worker. The string 
 contains the worker name and each day turn beginning and ending.
 
-Each day is divided in three turns:
+Each day is divided in three shifts:
 
 * Night: 00:00 - 9:00
 * Day: 9:00 - 18:00

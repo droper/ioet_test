@@ -5,51 +5,18 @@ Payment functions
 from datetime import datetime, timedelta
 from collections import OrderedDict
 
-from .config import message_strings, week_string_pattern
-from .utils import clean_data, validate_week_data
+from .config import message_strings
 
 
-def read_week_data(
-    data_file_handler, clean_func=clean_data, validate_func=validate_week_data
-):
-    """
-    Read each line in the data file, clean and validate. If valid add to the return list,
-    if not include an error message.
-
-    :param data_file_handler: file handler
-    :param clean_func: clean function
-    :param validate_func: validation function
-    :return: list of dicts with two keys, valid and text
-    """
-
-    # Clean data file strings
-    data_strings = clean_func(data_file_handler)
-
-    result_dicts = []
-
-    # If a string is valid, append it to the result, if not, append an error message
-    for count, data_string in enumerate(data_strings, 1):
-        if validate_func(data_string, week_string_pattern):
-            result_dicts.append({"valid": True, "text": data_string})
-        else:
-            result_dicts.append(
-                {
-                    "valid": False,
-                    "text": message_strings["format_error_message"].format(
-                        count, data_string
-                    ),
-                }
-            )
-
-    return result_dicts
-
-
-def worker_pay(worker_week_string: str) -> str:
+def worker_pay(
+    worker_week_string: str, message: str = message_strings["amount_message"]
+) -> str:
     """
     Receives a string with the worker name and week hours worked.
 
     :param worker_week_string: Data string with the format 'NAME=WD##:##-##:##,WD##:##-##:##' where WD is the
                  abbreviation of the day.
+    :param message:
     :return: A string with the amount of dollars to pay for each worker.
     """
 
@@ -57,7 +24,7 @@ def worker_pay(worker_week_string: str) -> str:
     name = parts[0]
     week_hours = parts[1]
 
-    return message_strings["amount_message"].format(name, week_pay(week_hours))
+    return message.format(name, week_pay(week_hours))
 
 
 def week_pay(week_data: str) -> float:
@@ -106,7 +73,7 @@ def day_pay(day_data: str) -> float:
     hf = "%H:%M"
 
     # The intervals that divide a day
-    day_intervals = {
+    day_shifts = {
         "n": {
             "begin": datetime.strptime("00:00", hf),
             "end": datetime.strptime("9:00", hf),
@@ -143,7 +110,7 @@ def day_pay(day_data: str) -> float:
     initial_interval = None
     end_interval = None
     # Found the intervals where the day working hours start and end
-    for day_turn, turn_interval_hours in day_intervals.items():
+    for day_turn, turn_interval_hours in day_shifts.items():
         if turn_interval_hours["begin"] <= start <= turn_interval_hours["end"]:
             initial_interval = day_turn
         if turn_interval_hours["begin"] <= end <= turn_interval_hours["end"]:
@@ -165,13 +132,13 @@ def day_pay(day_data: str) -> float:
             )
             break
         else:
-            current_end = day_intervals[current_interval]["end"]
+            current_end = day_shifts[current_interval]["end"]
             hours = round((current_end - current_start) / timedelta(hours=1), 2)
             pay_data.append(
                 {"day_type": day_type, "interval": current_interval, "hours": hours}
             )
             current_interval = interval_precedence[current_interval]
-            current_start = day_intervals[current_interval]["begin"]
+            current_start = day_shifts[current_interval]["begin"]
 
     # Calculate the pay for the day and add it to result
     for item in pay_data:

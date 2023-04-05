@@ -14,5 +14,5 @@ from paylib import (
     day_pay,
     worker_pay,
     validate_week_data,
-    clean_data
+    clean_data,
 )
