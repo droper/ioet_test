@@ -3,6 +3,7 @@ Unit tests
 """
 
 import unittest
+from io import StringIO
 
 from context import (
     week_pay,
@@ -11,10 +12,13 @@ from context import (
     validate_week_data,
     message_strings,
     week_string_pattern,
+    clean_data,
 )
 
 
 class TestPayFunction(unittest.TestCase):
+    """Test pay functions"""
+
     def test_week_pay(self):
         """Test week_pay function"""
 
@@ -60,6 +64,10 @@ class TestPayFunction(unittest.TestCase):
             worker_pay(data), message_strings["amount_message"].format(name, 510.0)
         )
 
+
+class TestUtilFunction(unittest.TestCase):
+    """Test util functions"""
+
     def test_validate_week_data(self):
         """Test validate_week_data function"""
 
@@ -69,6 +77,26 @@ class TestPayFunction(unittest.TestCase):
         self.assertTrue(validate_week_data(data, week_string_pattern))
         data = "ROSE=MO00:00-22:00,TH01:00-13:00,SA14:F0-18:00,SU02:00-23:30"
         self.assertFalse(validate_week_data(data, week_string_pattern))
+
+    def test_clean_data(self):
+        """Test clean_data function"""
+
+        data = (
+            "ReNE=MO10:00-12:00,Tu10:00-12:00,TH01:00-03:00  \n"
+            "ASTRID=MO10:00-12:00,  TH12:00-14:00\n"
+            "  rosE=MO00:00-22:00,TH01:00-13:00,SA14:00-18:00"
+        )
+
+        # Create a file in memory
+        data_file = StringIO(data)
+
+        result = clean_data(data_file)
+        expected_result = [
+            "RENE=MO10:00-12:00,TU10:00-12:00,TH01:00-03:00",
+            "ASTRID=MO10:00-12:00,TH12:00-14:00",
+            "ROSE=MO00:00-22:00,TH01:00-13:00,SA14:00-18:00",
+        ]
+        self.assertEqual(result, expected_result)
 
 
 if __name__ == "__main__":

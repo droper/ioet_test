@@ -3,92 +3,64 @@ Payment functions
 """
 
 from datetime import datetime, timedelta
-
-import re
-
 from collections import OrderedDict
 
 from .config import message_strings, week_string_pattern
+from .utils import clean_data, validate_week_data
 
 
-def clean_data(data_file_handler):
-    """
-    Receive the week data string and strip it from blank spaces and ensure that all chars are
-    upper case.
-    :param data_file_handler: Data file handler
-    :return: String
-    """
-
-    clean_strings = []
-    for week_data in data_file_handler.readlines():
-        clean_week_data = week_data.strip()
-        clean_week_data = clean_week_data.replace(' ', '')
-        clean_week_data = clean_week_data.upper()
-        clean_strings.append(clean_week_data)
-
-    return clean_strings
-
-
-def validate_week_data(week_data, pattern):
-    """
-    Validate if the week data string comply with the pattern.
-
-    :param week_data: String with week data
-    :param pattern: regular expression string
-    :return:
-    """
-
-    if re.match(pattern, week_data):
-        return True
-    return False
-
-
-def read_week_data(data_file_handler):
+def read_week_data(
+    data_file_handler, clean_func=clean_data, validate_func=validate_week_data
+):
     """
     Read each line in the data file, clean and validate. If valid add to the return list,
     if not include an error message.
 
     :param data_file_handler: file handler
+    :param clean_func: clean function
+    :param validate_func: validation function
     :return: list of dicts with two keys, valid and text
     """
 
     # Clean data file strings
-    data_strings = clean_data(data_file_handler)
+    data_strings = clean_func(data_file_handler)
 
     result_dicts = []
 
     # If a string is valid, append it to the result, if not, append an error message
     for count, data_string in enumerate(data_strings, 1):
-        if validate_week_data(data_string, week_string_pattern):
+        if validate_func(data_string, week_string_pattern):
             result_dicts.append({"valid": True, "text": data_string})
         else:
             result_dicts.append(
                 {
                     "valid": False,
-                    "text": message_strings["format_error_message"].format(count, data_string),
+                    "text": message_strings["format_error_message"].format(
+                        count, data_string
+                    ),
                 }
             )
 
     return result_dicts
 
 
-def worker_pay(data):
+def worker_pay(worker_week_string: str) -> str:
     """
     Receives a string with the worker name and week hours worked.
 
-    :param data: Data string with the format 'NAME=WD##:##-##:##,WD##:##-##:##' where WD is the
+    :param worker_week_string: Data string with the format 'NAME=WD##:##-##:##,WD##:##-##:##' where WD is the
                  abbreviation of the day.
-    :return: The amount of dollars to pay for each worker.
+    :return: A string with the amount of dollars to pay for each worker.
     """
 
-    parts = data.split("=")
+    parts = worker_week_string.split("=")
     name = parts[0]
     week_hours = parts[1]
 
     return message_strings["amount_message"].format(name, week_pay(week_hours))
 
 
-def week_pay(week_data):
+def week_pay(week_data: str) -> float:
     """
     Receives a week worked hours data and returns the amount of dollars to pay. For a day the amount of
     hours in each interval is calculated and used to multiply it for the hour salary.
@@ -109,25 +81,31 @@ def week_pay(week_data):
     return round(result, 2)
 
 
-def day_pay(day_data):
+def day_pay(day_data: str) -> float:
     """
     Receives a working day data and returns the payment for that day.
 
-    :param day_data: string in the format WD##:##
+    :param day_data: string in the format WD##:##, where WD is the abbreviation of the week day
     :return: a float with the amount of dollars for the day
     """
+
+    WD = "wd"
+    WE = "we"
+
+    # Days dictionary, each day has is type
     days = {
-        "MO": "wd",
-        "TU": "wd",
-        "WE": "wd",
-        "TH": "wd",
-        "FR": "wd",
-        "SA": "we",
-        "SU": "we",
+        "MO": WD,
+        "TU": WD,
+        "WE": WD,
+        "TH": WD,
+        "FR": WD,
+        "SA": WE,
+        "SU": WE,
     }
 
     hf = "%H:%M"
 
+    # The intervals that divide a day
     day_intervals = {
         "n": {
             "begin": datetime.strptime("00:00", hf),
@@ -143,11 +121,13 @@ def day_pay(day_data):
         },
     }
 
-    payments = {"wd": {"n": 25, "d": 15, "e": 20}, "we": {"n": 30, "d": 20, "e": 25}}
+    # The payment for each interval in each day type
+    payments = {WD: {"n": 25, "d": 15, "e": 20}, WE: {"n": 30, "d": 20, "e": 25}}
 
+    # The precedence of the intervals
     interval_precedence = OrderedDict({"n": "d", "d": "e"})
 
-    result = 0
+    day_salary = 0
 
     day = day_data[:2]  # The day abbreviation
     day_type = days[day]  # The type of the day
@@ -175,7 +155,8 @@ def day_pay(day_data):
     # If the current interval and the end interval are the same, calculate the amount
     # of hours worked and break the loop.
     # If not, calculate the amount of hours from the current start to the end of the
-    # interval and update current interval with the following interval.
+    # interval and update current interval and current start with the following interval
+    # and current end with the end of the current interval.
     while True:
         if current_interval == end_interval:
             hours = round((end - current_start) / timedelta(hours=1), 2)
@@ -194,6 +175,6 @@ def day_pay(day_data):
 
     # Calculate the pay for the day and add it to result
     for item in pay_data:
-        result += payments[item["day_type"]][item["interval"]] * item["hours"]
+        day_salary += payments[item["day_type"]][item["interval"]] * item["hours"]
 
-    return result
+    return day_salary
