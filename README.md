@@ -43,7 +43,7 @@ To execute the program in a *nix machine:
 * Clone the repository: `git clone https://github.com/droper/ioet_test.git`
 * Get into the repository directory: `cd ioet_test`
 * Execute the program: `python pay.py`
-* Run the tests: `python test.py`
+* Run the tests: `python tests/test.py`
 
 To add new strings to test the program, just open pay_data.txt and add new lines of text with a worker
 week data.

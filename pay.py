@@ -2,7 +2,7 @@
 Read the payment data and prints the week pay amount for each worker.
 """
 
-from lib import worker_pay, read_week_data
+from paylib import worker_pay, read_week_data
 
 
 def pay(data_file_handler):
