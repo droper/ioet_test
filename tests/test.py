@@ -4,7 +4,14 @@ Unit tests
 
 import unittest
 
-from context import week_pay, day_pay, worker_pay, validate_week_data, message_strings, week_string_pattern
+from context import (
+    week_pay,
+    day_pay,
+    worker_pay,
+    validate_week_data,
+    message_strings,
+    week_string_pattern,
+)
 
 
 class TestPayFunction(unittest.TestCase):
