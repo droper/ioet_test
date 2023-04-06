@@ -5,7 +5,28 @@ Payment functions
 from datetime import datetime, timedelta
 from collections import OrderedDict
 
+from .utils import read_week_data
 from .config import message_strings
+
+
+def pay(data_file_handler, read_week_strings=read_week_data):
+    """
+    Receives the handler of the data file and returns a list of strings with each
+    worker payment for valid strings and an error message for invalid ones.
+    :param data_file_handler: file handler
+    :param read_week_strings: function to read the data file and returns a list of strings
+    :return: list of strings
+    """
+
+    result_strings = []
+    workers_week_data = read_week_strings(data_file_handler)
+
+    for worker_week_data in workers_week_data:
+        if worker_week_data["valid"]:
+            result_strings.append(worker_pay(worker_week_data["text"]))
+        else:
+            result_strings.append(worker_week_data["text"])
+    return result_strings
 
 
 def worker_pay(

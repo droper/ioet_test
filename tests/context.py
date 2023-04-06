@@ -13,6 +13,7 @@ from paylib import (
     week_pay,
     day_pay,
     worker_pay,
+    pay,
     validate_week_data,
     clean_data,
 )

@@ -26,12 +26,19 @@ the hours of beginning and ending for each day work.
 
 ## Architecture
 
-The software is divided in layers, each one is in charge of one task:
+The software is divided in a package called paylib, with the pay library and utils functions. The 
+pay functions module contains three layers
 
-* Clean and validate the strings (this can be divided in more layers).
-* Create the response for each worker data.
-* Calculate the weekly payment for each worker
-* Calculate a day payment 
+* Create the response for all the workers data in the file
+* Create the response for each worker string data.
+* Calculate the weekly payment for each worker.
+* Calculate a day payment (the function with the main logic).
+
+The logic is divided so if there is the need to add more logic to process the data file, the worker
+string, or the worker hours data it can be easily added.
+
+In the utils there are three functions, one for cleaning other for validating the format of
+the worker string and one for reading and processing the lines in the data file.
 
 There are tests for each function.
 
